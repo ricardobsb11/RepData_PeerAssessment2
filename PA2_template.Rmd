@@ -1,0 +1,49 @@
+---
+title: "Peer Assessment 2.Rmd"
+author: "Ricardo"
+date: "15 de outubro de 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Projet 2 - Coursera
+
+```{r,echo=TRUE,message=FALSE}
+library(R.utils)
+library(data.table)
+```
+## Downloading and unpacking from the source URL.
+```{r,echo=TRUE}
+
+if (!file.exists("repdata-data-StormData.csv.bz2")) 
+        download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", 
+                      "repdata-data-StormData.csv.bz2", method = "curl")
+
+if (!file.exists("repdata-data-StormData.csv"))
+        bunzip2("repdata-data-StormData.csv.bz2", 
+                destname = "repdata-data-StormData.csv", remove = F)
+
+data <- read.csv("repdata-data-StormData.csv", stringsAsFactors = FALSE)
+```
+## Checking the dimensions and structure of the data
+```{r,echo=TRUE}
+dim(data) 
+str(data)
+```
+## Realizing some transformations in the data
+```{r# converting the format from the BGN_DATE variable to date}
+# converting the format from the BGN_DATE variable to date
+data$BGN_DATE <- as.Date(data$BGN_DATE,"%m/%d/%Y") 
+
+# checking the EVTYPE  variable
+data$EVTYPE <- toupper(data$EVTYPE) # capitalizing all the events type
+```
+
+
+
+
+
+
