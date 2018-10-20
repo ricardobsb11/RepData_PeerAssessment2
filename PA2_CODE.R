@@ -33,6 +33,7 @@ head(data_clean)
 names(data_clean) <- c("State", "Event", "Fatalities", "Injuries", "Property.Damage", "Property.Damage.Exp", "Crop.Damage", "Crop.Damage.Exp")
 
 # exploring the Event variable
+
 data_clean %>% 
         group_by(Event) %>%
         summarize(total=n()) %>% 
