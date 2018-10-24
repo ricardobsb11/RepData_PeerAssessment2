@@ -88,7 +88,7 @@ unique(data_clean$Property.Damage.Exp)
 unique(data_clean$Crop.Damage.Exp)
 
 # creating a new variables called Property.Damage.Total and Crop.Damage.Total and Total.Damage
-data_clean$Property.Damage.Total <- as.numeric(mapvalues(data_clean$Property.Damage,
+data_clean$Property.Damage.Total <- as.numeric(mapvalues(data_clean$Property.Damage.Exp,
                                                          c("K","M","", "B","m","+","0","5","6","?","4","2","3","h","7","H","-","1","8"), 
                                                          c(10^3,10^6, 1, 10^9,10^6,  1,  1,10^5,10^6,  1,10^4,10^2,10^3,  1,10^7,10^2,  1, 10,10^8))) * data_clean$Property.Damage
 
