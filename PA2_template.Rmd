@@ -1,21 +1,34 @@
 ---
-title: "Peer Assessment 2.Rmd"
-author: "Ricardo"
-date: "15 de outubro de 2018"
+title: "The most harmful climate events to population health in United States, and its economic consequences."
+author: "Ricardo Martins"
+date: "October 2018"
 output: html_document
 ---
 
+### Synopsys
+The National Oceanic and Atmospheric Administration’s storm database of the U.S.provided the [database](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2) containing data of storms and other severe weather events that caused both public health and economic problems for communities and municipalities in the U.S.
+The goal of this analysis is to answer the questions below:
+
+1. Across the United States, which types of events (as indicated in the Event variable) are most harmful with respect to population health?
+
+2. Across the United States, which types of events have the greatest economic consequences?
+ 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Projet 2 - Coursera
+### Packages used in this project
 
 ```{r,echo=TRUE,message=FALSE}
 library(R.utils)
 library(data.table)
+library(ggplot2)
+library(plyr)
+library(dplyr)
 ```
-## Downloading and unpacking from the source URL.
+
+## Data Processing
+### Downloading and unpacking from the source URL.
 ```{r,echo=TRUE}
 
 if (!file.exists("repdata-data-StormData.csv.bz2")) 
@@ -28,19 +41,214 @@ if (!file.exists("repdata-data-StormData.csv"))
 
 data <- read.csv("repdata-data-StormData.csv", stringsAsFactors = FALSE)
 ```
-## Checking the dimensions and structure of the data
+### Checking the dimensions of the raw data
 ```{r,echo=TRUE}
 dim(data) 
-str(data)
 ```
-## Realizing some transformations in the data
-```{r# converting the format from the BGN_DATE variable to date}
+### Realizing some transformations in the raw data
+```{r,echo=TRUE,message=FALSE, warning=FALSE}
 # converting the format from the BGN_DATE variable to date
 data$BGN_DATE <- as.Date(data$BGN_DATE,"%m/%d/%Y") 
 
-# checking the EVTYPE  variable
-data$EVTYPE <- toupper(data$EVTYPE) # capitalizing all the events type
+# selecting some variables from original dataset
+data_clean <- subset(data, select = c("STATE__","EVTYPE","FATALITIES","INJURIES","PROPDMG","PROPDMGEXP","CROPDMG","CROPDMGEXP"))
+
+# changing the variables names for a better comprehension
+names(data_clean) <- c("State", "Event", "Fatalities", "Injuries", "Property.Damage", "Property.Damage.Exp", "Crop.Damage", "Crop.Damage.Exp")
+
+# capitalizing all the events type
+data_clean$Event <- toupper(data_clean$Event) 
+head(data_clean)
 ```
+
+#### Exploring the Event variable:
+```{r,message=FALSE, warning=FALSE, echo=TRUE}
+detach("package:plyr", unload=TRUE) 
+event.summary = data_clean %>% 
+        group_by(Event) %>%
+        summarize(total=n()) %>% 
+        arrange(desc(total))
+
+head(event.summary,5)
+```
+
+#### Reducing the sub-categories caused by a lot of words with uppercase and lowercase: 
+```{r,echo=TRUE}
+data_clean$Event <- gsub("^(HEAT).*", "HEAT", data_clean$Event)
+data_clean$Event <- gsub("^(RECORD HEAT).*", "HEAT", data_clean$Event)
+data_clean$Event <- gsub("^(EXTREME HEAT).*", "HEAT", data_clean$Event)
+data_clean$Event <- gsub("^(EXCESSIVE HEAT).*", "HEAT", data_clean$Event)
+data_clean$Event <- gsub("^(TSTM).*", "THUNDER STORM", data_clean$Event)
+data_clean$Event <- gsub("^(THUNDERSTORM).*", "THUNDER STORM", data_clean$Event)
+data_clean$Event <- gsub("^(TROPICAL STORM).*", "TROPICAL STORM", data_clean$Event)
+data_clean$Event <- gsub("^(FLASH FLOOD).*", "FLOOD", data_clean$Event)
+data_clean$Event <- gsub("^(WIND).*", "WIND", data_clean$Event)
+data_clean$Event <- gsub("^(STRONG WIND).*", "WIND", data_clean$Event)
+data_clean$Event <- gsub("^(HIGH WIND).*", "WIND", data_clean$Event)
+data_clean$Event <- gsub("^(HURRICANE).*", "HURICCANE", data_clean$Event)
+data_clean$Event <- gsub("^(SNOW).*", "SNOW", data_clean$Event)
+data_clean$Event <- gsub("^(HEAVY SNOW).*", "SNOW", data_clean$Event)
+data_clean$Event <- gsub("^(FIRE).*", "FIRE", data_clean$Event)
+data_clean$Event <- gsub("^(WILD/FOREST FIRE).*", "FIRE", data_clean$Event)
+data_clean$Event <- gsub("^(WILDFIRE).*", "FIRE", data_clean$Event)
+data_clean$Event <- gsub("^(WILD FIRES).*", "FIRE", data_clean$Event)
+data_clean$Event <- gsub("^(HAIL).*", "HAIL", data_clean$Event)
+data_clean$Event <- gsub("^(BLIZZARD).*", "BLIZZARD", data_clean$Event)
+data_clean$Event <- gsub("^(COLD).*", "COLD", data_clean$Event)
+data_clean$Event <- gsub("^(WINTER WEATHER).*", "COLD", data_clean$Event)
+data_clean$Event <- gsub("^(EXTREME COLD).*", "COLD", data_clean$Event)
+data_clean$Event <- gsub("^(RIP).*", "RIP", data_clean$Event)
+data_clean$Event <- gsub("^(FOG).*", "FOG", data_clean$Event)
+data_clean$Event <- gsub("^(DENSE FOG).*", "FOG", data_clean$Event)
+data_clean$Event <- gsub("^(AVALANCHE).*", "AVALANCHE", data_clean$Event)
+data_clean$Event <- gsub("^(AVALANCE).*", "AVALANCHE", data_clean$Event)
+data_clean$Event <- gsub("^(RAIN).*", "RAIN", data_clean$Event)
+data_clean$Event <- gsub("^(HEAVY RAIN).*", "RAIN", data_clean$Event)
+data_clean$Event <- gsub("^(HIGH SURF).*", "SURF", data_clean$Event)
+data_clean$Event <- gsub("^(HEAVY SURF).*", "SURF", data_clean$Event)
+data_clean$Event <- gsub("^(SURF).*", "SURF", data_clean$Event)
+```
+
+#### After cleaning the data, we´re creating a new object:
+```{r,echo=TRUE}
+event.summary.clean = data_clean %>% 
+        group_by(Event) %>%
+        summarize(total=n()) %>% 
+        arrange(desc(total))
+head(event.summary.clean)
+```
+
+The variables PROPDMGEXP and CROPDMGEXP have the factor of multiplicity of the variables PROPDMG and CROPDMG:
+
+#### Checking the unique values of Property.Damage.Exp variable:
+```{r,echo=TRUE}
+unique(data_clean$Property.Damage.Exp)
+```
+
+#### Checking the unique values of Crop.Damage.Exp variable
+```{r,echo=TRUE}
+unique(data_clean$Crop.Damage.Exp)
+```
+
+Here, we´re creating three new variables called Property.Damage.Total, Crop.Damage.Total and Total.Damage
+
+```{r message=FALSE, warning=FALSE,echo=TRUE}
+library(plyr)
+data_clean$Property.Damage.Total <- as.numeric(mapvalues(data_clean$Property.Damage.Exp,
+                                                         c("K","M","", "B","m","+","0","5","6","?","4","2","3","h","7","H","-","1","8"), 
+                                                         c(10^3,10^6, 1, 10^9,10^6,  1,  1,10^5,10^6,  1,10^4,10^2,10^3,  1,10^7,10^2,  1, 10,10^8))) * data_clean$Property.Damage
+
+data_clean$Crop.Damage.Total <- as.numeric(mapvalues(data_clean$Crop.Damage.Exp,
+                                                     c("","M","K","m","B","?","0","k","2"),
+                                                     c( 1,10^6,10^3,10^6,10^9,1,1,10^3,10^2))) * data_clean$Crop.Damage
+
+data_clean$Total.Damage <- data_clean$Property.Damage.Total + data_clean$Crop.Damage.Total
+```
+
+#### Summarizing the data by event type:
+
+```{r,echo=TRUE}
+event_total <- ddply(data_clean,.(Event), summarize,Property = sum(Property.Damage.Total),
+                     Crop = sum(Crop.Damage.Total),PropertyDamage = sum(Total.Damage), Injuries= sum(Injuries), Fatalities = sum(Fatalities), PersonalDamage = sum(Injuries)+sum(Fatalities))
+
+head(event_total)
+```
+#### Ordering the data by property damage:
+```{r,echo=TRUE}
+event_total_ordered1 <- event_total[order(event_total$PropertyDamage, decreasing = TRUE),]
+head(event_total_ordered1)
+```
+#### Checking the top 10 property damage by event and plotting it:
+```{r,echo=TRUE}
+head(event_total_ordered1,10)
+graf_totalpropertydamage <- ggplot(head(event_total_ordered1,10), aes(x = Event, y = PropertyDamage)) + 
+        geom_bar(stat = "identity",color = "red",fill="darkgreen") +
+        ylab("Property damage in $") + 
+        ggtitle("Total Property Damage by events in U.S ($) ") + 
+        theme(axis.text.x = element_text(angle = 90, vjust = .5))
+```
+#### Plot of total property damage by event type
+```{r,echo=TRUE}
+graf_totalpropertydamage
+```
+
+This graphic shows us that related to the total property damage, the most harmful was the FLOODS event. 
+
+#### Plot of top 10 property damage:
+```{r,echo=TRUE}
+graf_propdamage <- ggplot(head(event_total[order(event_total$Property, decreasing = TRUE),],10), aes(x = Event, y = Property)) + 
+        geom_bar(stat = "identity",color = "red",fill="blue") +
+        ylab("Property damage in $") + 
+        ggtitle("Property damage by events in U.S ($)") +
+        theme(axis.text.x = element_text(angle = 90, vjust = .5))
+graf_propdamage
+```
+
+Related only to the property damage, we can see that FLOODS event was the worst, from the graphic above.
+
+#### Plot of top 10 crop damage:
+```{r,echo=TRUE}
+graf_cropdamage <- ggplot(head(event_total[order(event_total$Crop, decreasing = TRUE),],10), aes(x = Event, y = Crop)) + 
+        geom_bar(stat = "identity",color = "red",fill="green") +
+        ylab("Crop damage in $") + 
+        ggtitle("Crop damage by events in U.S ($)") +
+        theme(axis.text.x = element_text(angle = 90, vjust = .5))
+graf_cropdamage
+```
+
+Related only to the crop damage, we can see that DROUGHTS event was the worst, from the graphic above.
+
+#### Ordering the data by personal damage:
+```{r,echo=TRUE}
+event_total_ordered2 <- event_total[order(event_total$PersonalDamage, decreasing = TRUE),]
+head(event_total_ordered2)
+```
+
+#### Checking the top 10 personal damage by event and plotting it:
+```{r,echo=TRUE}
+head(event_total_ordered2,10)
+graf_totalpersonaldamage <- ggplot(head(event_total_ordered2,10), aes(x = Event, y = PersonalDamage)) + 
+        geom_bar(stat = "identity",color = "red",fill="grey") +
+        ylab("Total of personal damage") + 
+        ggtitle("Total Personal Damage by events in U.S") +
+        theme(axis.text.x = element_text(angle = 90, vjust = .5))
+```
+
+#### Plot of total personal damage by event type
+
+```{r,echo=TRUE}
+graf_totalpersonaldamage
+```
+
+From the analysis of the graphic above, we can see that TORNADO was the event most harmful to the personal health.
+
+#### Plot of injuries by event (top 10):
+```{r,echo=TRUE}
+graf_injuries <- ggplot(head(event_total[order(event_total$Injuries, decreasing = TRUE),],10), aes(x = Event, y = Injuries)) + 
+        geom_bar(stat = "identity",color = "red",fill="pink") +
+        ylab("Total of injuries") + 
+        ggtitle("Total Injuries by events in U.S") +
+        theme(axis.text.x = element_text(angle = 90, vjust = .5))
+graf_injuries
+```
+
+TORNADO was the event that caused most injuries in the population. According to the graphic above.
+#### Plot of fatalities by event (top 10):
+```{r,echo=TRUE}
+graf_fatalities <- ggplot(head(event_total[order(event_total$Fatalities, decreasing = TRUE),],10), aes(x = Event, y = Fatalities)) + 
+        geom_bar(stat = "identity",color = "black",fill="red") +
+        ylab("Total of fatalities") + 
+        ggtitle("Total Fatalities by events in U.S") +
+        theme(axis.text.x = element_text(angle = 90, vjust = .5))
+graf_fatalities
+```
+
+TORNADO was the event that caused most fatalities in the population. According to the graphic above.
+
+## Results
+From this analysis, we can answer the questions about which types of events are most harmful with respect to population health. In the plot of total personal damage by event type, we can see that tornado was the event type most harmful to the people health, across the United States.
+
+Related to the second question, across the United States, which types of events have the greatest economic consequences, the plot of total property damage by event type shows us that the floods are the events that generated greatest economic consequences, followed by hurricanes and tornados.   
 
 
 

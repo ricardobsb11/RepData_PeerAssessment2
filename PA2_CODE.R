@@ -33,6 +33,7 @@ data_clean$Event <- toupper(data_clean$Event) # capitalizing all the events type
 head(data_clean)
 
 # exploring the Event variable
+detach("package:plyr", unload=TRUE) 
 event.summary = data_clean %>% 
         group_by(Event) %>%
         summarize(total=n()) %>% 
@@ -79,19 +80,20 @@ event.summary.clean = data_clean %>%
         summarize(total=n()) %>% 
         arrange(desc(total))
 
+event.summary.clean
+
 # The variables PROPDMGEXP and CROPDMGEXP have the factor of multiplicity of the variables PROPDMG and CROPDMG:
 
-# the unique values of Property.Damage.Exp variable
+# checking the unique values of Property.Damage.Exp variable
 unique(data_clean$Property.Damage.Exp)
 
-# the unique values of Crop.Damage.Exp variable
+# checking the unique values of Crop.Damage.Exp variable
 unique(data_clean$Crop.Damage.Exp)
 
-# creating a new variables called Property.Damage.Total and Crop.Damage.Total and Total.Damage
+# creating three new variables called Property.Damage.Total and Crop.Damage.Total and Total.Damage
 data_clean$Property.Damage.Total <- as.numeric(mapvalues(data_clean$Property.Damage.Exp,
                                                          c("K","M","", "B","m","+","0","5","6","?","4","2","3","h","7","H","-","1","8"), 
                                                          c(10^3,10^6, 1, 10^9,10^6,  1,  1,10^5,10^6,  1,10^4,10^2,10^3,  1,10^7,10^2,  1, 10,10^8))) * data_clean$Property.Damage
-
 
 data_clean$Crop.Damage.Total <- as.numeric(mapvalues(data_clean$Crop.Damage.Exp,
                                                      c("","M","K","m","B","?","0","k","2"),
@@ -100,7 +102,49 @@ data_clean$Crop.Damage.Total <- as.numeric(mapvalues(data_clean$Crop.Damage.Exp,
 data_clean$Total.Damage <- data_clean$Property.Damage.Total + data_clean$Crop.Damage.Total
 
 
-summary <- ddply(data_clean,.(Event), summarize, PropertyDamage = sum(Total.Damage), Injuries= sum(Injuries), Fatalities = sum(Fatalities), PersonalDamage = sum(Injuries)+sum(Fatalities))
-summary <- summary[order(summary$PropertyDamage, decreasing = TRUE),]
+#summarizing the data by event type
+event_total <- ddply(data_clean,.(Event), summarize,Property = sum(Property.Damage.Total),
+                     Crop = sum(Crop.Damage.Total),PropertyDamage = sum(Total.Damage), Injuries= sum(Injuries), Fatalities = sum(Fatalities), PersonalDamage = sum(Injuries)+sum(Fatalities))
 
-View(head(summary,10))
+View(head(event_total))
+
+# ordering by property damage
+event_total_ordered1 <- event_total[order(event_total$PropertyDamage, decreasing = TRUE),]
+
+# checking the top 10 property damage by event and plotting it 
+head(event_total_ordered1,10)
+graf_totalpropertydamage <- ggplot(head(event_total_ordered1,10), aes(x = Event, y = PropertyDamage)) + 
+        geom_bar(stat = "identity",color = "red",fill="darkgreen") +
+        ggtitle("Total Property Damage by events in U.S ($) ")
+graf_totalpropertydamage
+
+# plot of top 10 property damage
+graf_propdamage <- ggplot(head(event_total[order(event_total$Property, decreasing = TRUE),],10), aes(x = Event, y = Property)) + 
+        geom_bar(stat = "identity",color = "red",fill="blue") +
+        ggtitle("Property damage by events in U.S ($)")
+graf_propdamage
+# plot of top 10 crop damage
+graf_cropdamage <- ggplot(head(event_total[order(event_total$Crop, decreasing = TRUE),],10), aes(x = Event, y = Crop)) + 
+        geom_bar(stat = "identity",color = "red",fill="green") +
+        ggtitle("Crop damage by events in U.S ($)")
+graf_cropdamage
+
+# ordering by personal damage
+event_total_ordered2 <- event_total[order(event_total$PersonalDamage, decreasing = TRUE),]
+
+# checking the top 10 personal damage by event and plotting it
+head(event_total_ordered2,10)
+graf_totalpersonaldamage <- ggplot(head(event_total_ordered2,10), aes(x = Event, y = PersonalDamage)) + 
+        geom_bar(stat = "identity",color = "red",fill="grey") +
+        ggtitle("Total Personal Damage by events in U.S")
+graf_totalpersonaldamage
+# plot of injuries by event (top 10)
+graf_injuries <- ggplot(head(event_total[order(event_total$Injuries, decreasing = TRUE),],10), aes(x = Event, y = Injuries)) + 
+        geom_bar(stat = "identity",color = "red",fill="pink") +
+        ggtitle("Total Injuries by events in U.S")
+graf_injuries
+# plot of fatalities by event
+graf_fatalities <- ggplot(head(event_total[order(event_total$Fatalities, decreasing = TRUE),],10), aes(x = Event, y = Fatalities)) + 
+        geom_bar(stat = "identity",color = "black",fill="red") +
+        ggtitle("Total Fatalities by events in U.S")
+graf_fatalities
